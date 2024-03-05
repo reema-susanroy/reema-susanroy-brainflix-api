@@ -1,8 +1,12 @@
 const express = require("express");
 const videoRoute = require('./routes/videos') ;
 const app=express();
+const cors = require('cors');
+
 
 app.use(express.static("public"));
+app.use(cors());
+
 app.use(express.json());
 
 // app.use((req, res, next) => {

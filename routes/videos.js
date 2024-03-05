@@ -61,7 +61,7 @@ router
             likes: 0,
             duration: "45:59",
             video: "https://unit-3-project-api-0a5620414506.herokuapp.com/stream",
-            timestamp: new Date,
+            timestamp: Date.now(),
             comments: []
         };
         videoData.push(newVideo);
