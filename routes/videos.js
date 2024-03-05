@@ -29,22 +29,6 @@ router
         }))
         res.send(videoFilteredList)
     })
-
-router
-    .route("/:videoId")
-    .get((req, res) => {
-        const videoId = (req.params.videoId);
-
-        const videoData = getVideos();
-
-        const clickedVideoDetails = videoData.find((data) => {
-            return data.id === videoId;
-        })
-        res.send(clickedVideoDetails)
-    })
-
-router
-    .route("/")
     .post((req, res) => {
         console.log(req.body)
         const { title, description } = req.body;
@@ -67,6 +51,42 @@ router
         videoData.push(newVideo);
         setVideos(videoData);
         res.send(newVideo);
+    })
+
+router
+    .route("/:videoId")
+    .get((req, res) => {
+        const videoId = (req.params.videoId);
+
+        const videoData = getVideos();
+
+        const clickedVideoDetails = videoData.find((data) => {
+            return data.id === videoId;
+        })
+        console.log(clickedVideoDetails)
+        res.send(clickedVideoDetails)
+    })
+
+router
+    .route("/:id/comments")
+    .post((req, res) => {
+        console.log(req.body)
+
+        const id = (req.params.id);
+        const { name, comment } = req.body;
+        const videoData = getVideos();
+        const video = videoData.find(video => video.id === id);
+
+        const newComment = {
+            id: crypto.randomUUID(),
+            name: name,
+            comment: comment,
+            likes: 0,
+            timestamp: Date.now()
+        };
+        video.comments.push(newComment);
+        setVideos(videoData);
+        res.send(newComment);
     })
 
 module.exports = router;
