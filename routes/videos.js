@@ -70,12 +70,10 @@ router
 router
     .route("/:id/comments")
     .post((req, res) => {
-        console.log(req.body)
-
         const id = (req.params.id);
         const { name, comment } = req.body;
         const videoData = getVideos();
-        const video = videoData.find(video => video.id === id);
+        const foundVideo = videoData.find(video => video.id === id);
 
         const newComment = {
             id: crypto.randomUUID(),
@@ -84,9 +82,31 @@ router
             likes: 0,
             timestamp: Date.now()
         };
-        video.comments.push(newComment);
+        foundVideo.comments.push(newComment);
         setVideos(videoData);
         res.send(newComment);
     })
+
+router
+    .route("/:videoId/comments/:commentId")
+    .delete((req,res) => {
+        const videoId = req.params.videoId;
+        const commentId = req.params.commentId;
+        const videoData = getVideos();
+        const foundVideo = videoData.find(video => video.id === videoId);
+        if (foundVideo === -1) {
+            return res.status(404).json({ error: "Video record not found" });
+        }
+        else{
+            const foundComment= foundVideo.comments.findIndex(comment => comment.id === commentId)
+            if (foundComment === -1) {
+                return res.status(404).json({ error: "Comment not found" });
+            }
+            foundVideo.comments.splice(foundComment, 1);
+        }
+        setVideos(videoData);
+        res.status(204).send();
+    })
+
 
 module.exports = router;
