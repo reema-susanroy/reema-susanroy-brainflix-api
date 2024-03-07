@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const fs = require('fs');
 const crypto = require('crypto');
+const { type } = require('os');
 
 const json_file_path = './data/videos.json';
 
@@ -108,5 +109,19 @@ router
         res.status(204).send();
     })
 
+router
+    .route("/:videoId/likes")
+    .put((req,res) => {
+        const videoId = req.params.videoId;
+        
+        const videoData = getVideos();
+        const foundVideo = videoData.find(video => video.id === videoId);
+        const like = parseFloat(foundVideo.likes.replace(/,/g, '')) +1 ;
+        const strLike = like.toLocaleString('en-US');
+        foundVideo.likes= strLike;
+        setVideos(videoData); 
+
+        res.send(strLike);
+    })
 
 module.exports = router;
