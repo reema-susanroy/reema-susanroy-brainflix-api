@@ -1,10 +1,12 @@
 const express = require("express");
 const videoRoute = require('./routes/videos') ;
+// const upload= require('./routes/videos')
 const app=express();
 const cors = require('cors');
 
 
 app.use(express.static("public"));
+// app.use(upload.single('image'));
 app.use(cors());
 
 app.use(express.json());

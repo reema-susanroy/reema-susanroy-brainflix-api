@@ -2,7 +2,8 @@ const express = require('express');
 const router = express.Router();
 const fs = require('fs');
 const crypto = require('crypto');
-const { type } = require('os');
+const multer = require('multer');
+
 
 const json_file_path = './data/videos.json';
 
@@ -18,6 +19,20 @@ const setVideos = (video) => {
     console.log(json_file_path);
 }
 
+const storage = multer.diskStorage({
+
+    destination: (req, file, cb) => {
+        cb(null, 'public/uploads/');
+    },
+    filename: (req, file, cb) => {
+        cb(null, file.originalname);
+    },
+});
+
+const upload = multer({ storage: storage });
+// router.use(upload.single('image'));
+
+
 router
     .route("/")
     .get((req, res) => {
@@ -30,8 +45,37 @@ router
         }))
         res.send(videoFilteredList)
     })
-    .post((req, res) => {
-        console.log(req.body)
+    .post(upload.single('posterImage'), (req, res) => {
+        console.log(req.file);
+
+        const imagePath = req.file ? req.file.path : './images/new-video.jpg';
+        const match = imagePath.match(/\\uploads\\(.+)/);
+        const extractedPath = match ? match[0] : null;
+
+        console.log(extractedPath)
+        const { title, description } = req.body;
+        const videoData = getVideos();
+        const newVideo = {
+            id: crypto.randomUUID(),
+            title: title,
+            channel: "Reema Roy",
+            image: extractedPath,
+            description: description,
+            views: 0,
+            likes: 0,
+            duration: "45:59",
+            video: './video/video.mp4',
+            timestamp: Date.now(),
+            comments: []
+        };
+        videoData.push(newVideo);
+        setVideos(videoData);
+        console.log(newVideo);
+        res.status(200).send(newVideo);
+    })
+        /*const imagePath = req.file ? req.file.path : './images/new-video.jpg';
+
+        // console.log(imagePath);
         const { title, description } = req.body;
 
         const videoData = getVideos();
@@ -40,7 +84,7 @@ router
             id: crypto.randomUUID(),
             title: title,
             channel: "Reema Roy",
-            image: './images/new-video.jpg',
+            // image: imagePath,
             description: description,
             views: 0,
             likes: 0,
@@ -49,22 +93,22 @@ router
             timestamp: Date.now(),
             comments: []
         };
-        videoData.push(newVideo);
-        setVideos(videoData);
+        console.log(newVideo);
+        // videoData.push(newVideo);
+        // setVideos(videoData);
         res.send(newVideo);
-    })
+    })*/
 
 router
-    .route("/:videoId")
+    .route("/:id")
     .get((req, res) => {
-        const videoId = (req.params.videoId);
+        const videoId = (req.params.id);
 
         const videoData = getVideos();
 
         const clickedVideoDetails = videoData.find((data) => {
             return data.id === videoId;
         })
-        console.log(clickedVideoDetails)
         res.send(clickedVideoDetails)
     })
 
@@ -90,7 +134,7 @@ router
 
 router
     .route("/:videoId/comments/:commentId")
-    .delete((req,res) => {
+    .delete((req, res) => {
         const videoId = req.params.videoId;
         const commentId = req.params.commentId;
         const videoData = getVideos();
@@ -98,8 +142,8 @@ router
         if (foundVideo === -1) {
             return res.status(404).json({ error: "Video record not found" });
         }
-        else{
-            const foundComment= foundVideo.comments.findIndex(comment => comment.id === commentId)
+        else {
+            const foundComment = foundVideo.comments.findIndex(comment => comment.id === commentId)
             if (foundComment === -1) {
                 return res.status(404).json({ error: "Comment not found" });
             }
@@ -111,15 +155,15 @@ router
 
 router
     .route("/:videoId/likes")
-    .put((req,res) => {
+    .put((req, res) => {
         const videoId = req.params.videoId;
-        
+
         const videoData = getVideos();
         const foundVideo = videoData.find(video => video.id === videoId);
-        const like = parseFloat(foundVideo.likes.replace(/,/g, '')) +1 ;
+        const like = parseFloat(foundVideo.likes.replace(/,/g, '')) + 1;
         const strLike = like.toLocaleString('en-US');
-        foundVideo.likes= strLike;
-        setVideos(videoData); 
+        foundVideo.likes = strLike;
+        setVideos(videoData);
 
         res.send(strLike);
     })
