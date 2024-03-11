@@ -3,8 +3,9 @@ const router = express.Router();
 const fs = require('fs');
 const crypto = require('crypto');
 const multer = require('multer');
+const path = require('path');
 
-
+let videoId;
 const json_file_path = './data/videos.json';
 
 const getVideos = () => {
@@ -16,22 +17,21 @@ const getVideos = () => {
 const setVideos = (video) => {
     const videosJson = JSON.stringify(video)
     fs.writeFileSync(json_file_path, videosJson);
-    console.log(json_file_path);
 }
 
 const storage = multer.diskStorage({
-
-    destination: (req, file, cb) => {
-        cb(null, 'public/uploads/');
+    destination: (req, file, callback) => {
+        callback(null, 'public/uploads/');
     },
-    filename: (req, file, cb) => {
-        cb(null, file.originalname);
+    filename: (req, file, callback) => {
+        videoId = crypto.randomUUID();
+        const extPath = path.extname(file.originalname);
+        const newName = `${videoId}${extPath}`
+        callback(null, newName);
     },
 });
 
 const upload = multer({ storage: storage });
-// router.use(upload.single('image'));
-
 
 router
     .route("/")
@@ -46,17 +46,15 @@ router
         res.send(videoFilteredList)
     })
     .post(upload.single('posterImage'), (req, res) => {
-        console.log(req.file);
-
         const imagePath = req.file ? req.file.path : './images/new-video.jpg';
         const match = imagePath.match(/\\uploads\\(.+)/);
         const extractedPath = match ? match[0] : null;
 
-        console.log(extractedPath)
         const { title, description } = req.body;
         const videoData = getVideos();
         const newVideo = {
-            id: crypto.randomUUID(),
+            // id: crypto.randomUUID(),
+            id: videoId,
             title: title,
             channel: "Reema Roy",
             image: extractedPath,
@@ -70,34 +68,8 @@ router
         };
         videoData.push(newVideo);
         setVideos(videoData);
-        console.log(newVideo);
         res.status(200).send(newVideo);
     })
-        /*const imagePath = req.file ? req.file.path : './images/new-video.jpg';
-
-        // console.log(imagePath);
-        const { title, description } = req.body;
-
-        const videoData = getVideos();
-
-        const newVideo = {
-            id: crypto.randomUUID(),
-            title: title,
-            channel: "Reema Roy",
-            // image: imagePath,
-            description: description,
-            views: 0,
-            likes: 0,
-            duration: "45:59",
-            video: "https://unit-3-project-api-0a5620414506.herokuapp.com/stream",
-            timestamp: Date.now(),
-            comments: []
-        };
-        console.log(newVideo);
-        // videoData.push(newVideo);
-        // setVideos(videoData);
-        res.send(newVideo);
-    })*/
 
 router
     .route("/:id")
@@ -105,7 +77,6 @@ router
         const videoId = (req.params.id);
 
         const videoData = getVideos();
-
         const clickedVideoDetails = videoData.find((data) => {
             return data.id === videoId;
         })
@@ -160,12 +131,19 @@ router
 
         const videoData = getVideos();
         const foundVideo = videoData.find(video => video.id === videoId);
-        const like = parseFloat(foundVideo.likes.replace(/,/g, '')) + 1;
-        const strLike = like.toLocaleString('en-US');
-        foundVideo.likes = strLike;
+        if (typeof foundVideo.likes === "string") {
+            if (foundVideo.likes.includes(',')) {
+                const like = parseFloat(foundVideo.likes.replace(/,/g, '')) + 1;
+                const strLike = like.toLocaleString('en-US');
+                foundVideo.likes = strLike;
+            }
+        }
+        else if (typeof foundVideo.likes === "number") {
+            const like = foundVideo.likes + 1;
+            foundVideo.likes = like;
+        }
         setVideos(videoData);
-
-        res.send(strLike);
+        res.status(200).json(foundVideo.likes);
     })
 
 module.exports = router;
